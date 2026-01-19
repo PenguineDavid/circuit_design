@@ -176,8 +176,6 @@ Appears when items are selected with context-sensitive options.
 | Ctrl + Mouse Wheel | Zoom | Zoom canvas |
 | Space + Drag | Pan | Move canvas |
 | G | Toggle Grid | Show / hide grid |
-| Ctrl + S | Save | Save to browser |
-| Ctrl + O | Open | Load from browser |
 
 ---
 
@@ -302,3 +300,4 @@ Appears when items are selected with context-sensitive options.
 - **Last Updated**: 19/01/2026 
 - **Author**: David S  
 - **Copyright**: ©2026 David S all rights reserved
+
