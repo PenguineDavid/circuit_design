@@ -1681,13 +1681,13 @@
 
             // Leads (left and right)
             ctx.beginPath();
-            ctx.moveTo(startX - plateSpacing, 0);
+            ctx.moveTo(startX - plateSpacing - 4, 0);
             ctx.lineTo(startX, 0);
             ctx.stroke();
 
             ctx.beginPath();
             ctx.moveTo(startX + plateSpacing * 5, 0);
-            ctx.lineTo(startX + plateSpacing * 6, 0);
+            ctx.lineTo(startX + plateSpacing * 6 + 4, 0);
             ctx.stroke();
 
             // + / − labels - SAVE/RESTORE to prevent flip
@@ -3231,15 +3231,15 @@
                 ctx.stroke();
             }
 
-            // Leads
+            // Leads (left and right)
             ctx.beginPath();
-            ctx.moveTo(startX - plateSpacing, 0);
+            ctx.moveTo(startX - plateSpacing - 4, 0);
             ctx.lineTo(startX, 0);
             ctx.stroke();
 
             ctx.beginPath();
             ctx.moveTo(startX + plateSpacing * 5, 0);
-            ctx.lineTo(startX + plateSpacing * 6, 0);
+            ctx.lineTo(startX + plateSpacing * 6 + 4, 0);
             ctx.stroke();
 
             ctx.save();
@@ -3491,3 +3491,4 @@
 
 
 </html>
+
