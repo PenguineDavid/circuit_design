@@ -1,0 +1,3502 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circuit Diagram Designer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 1.8rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: #4a6fdc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #3a5fcc;
+        }
+
+        .btn-export {
+            background-color: #28a745;
+        }
+
+        .btn-export:hover {
+            background-color: #218838;
+        }
+
+        .btn-clear {
+            background-color: #dc3545;
+        }
+
+        .btn-clear:hover {
+            background-color: #c82333;
+        }
+
+        .btn-help {
+            background-color: #6c757d;
+        }
+
+        .btn-help:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-keybinds {
+            background-color: #17a2b8;
+        }
+
+        .btn-keybinds:hover {
+            background-color: #138496;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 220px;
+            background-color: white;
+            padding: 15px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar-section {
+            border-bottom: 1px solid #eaeaea;
+            padding-bottom: 15px;
+        }
+
+        .sidebar-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #2a5298;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hint {
+            font-size: 0.7rem;
+            color: #6c757d;
+            font-weight: normal;
+        }
+
+        .components {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .component {
+            width: 90px;
+            height: 70px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            transition: all 0.2s;
+            background-color: #f9f9f9;
+            user-select: none;
+            position: relative;
+        }
+
+        .component:hover {
+            border-color: #4a6fdc;
+            background-color: #f0f4ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(74, 111, 220, 0.2);
+        }
+
+        .component:active {
+            cursor: grabbing;
+        }
+
+        .component.dragging {
+            opacity: 0.7;
+            transform: scale(0.95);
+        }
+
+        .component-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            color: #2a5298;
+        }
+
+        .component-label {
+            font-size: 0.8rem;
+            color: #555;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            background-color: #f9f9f9;
+        }
+
+        #gridCanvas {
+            background-color: white;
+            display: block;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .properties-panel {
+            width: 250px;
+            background-color: white;
+            padding: 15px;
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.05);
+            display: none;
+        }
+
+        .properties-panel.active {
+            display: block;
+        }
+
+        .property-group {
+            margin-bottom: 20px;
+        }
+
+        .property-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #444;
+        }
+
+        .property-input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .property-input:focus {
+            outline: none;
+            border-color: #4a6fdc;
+        }
+
+        .rotate-btn {
+            width: 100%;
+            padding: 8px;
+            background-color: #f0f4ff;
+            border: 1px solid #4a6fdc;
+            color: #2a5298;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rotate-btn:hover {
+            background-color: #e1e9ff;
+        }
+
+        .grid-info {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            color: #666;
+            z-index: 10;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: none;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .wire-mode {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .text-mode {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .mode-indicator {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: none;
+            z-index: 10;
+        }
+
+        .component.selected {
+            border: 2px solid #4a6fdc !important;
+            background-color: #eef2ff;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-title {
+            margin-bottom: 15px;
+            color: #2a5298;
+            font-size: 1.5rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-image {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            margin-top: 15px;
+        }
+
+        .selection-hint {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            color: #666;
+            max-width: 200px;
+            z-index: 10;
+        }
+
+        .keybind-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .keybind-table th {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+            color: #2a5298;
+        }
+
+        .keybind-table td {
+            padding: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .keybind-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .key {
+            display: inline-block;
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin-right: 5px;
+        }
+
+        .help-section {
+            margin-bottom: 25px;
+        }
+
+        .help-section h3 {
+            color: #2a5298;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .help-section p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .help-section ul {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .help-section li {
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .tutorial-highlight {
+            position: absolute;
+            border: 2px solid #ff5722;
+            border-radius: 8px;
+            background-color: rgba(255, 87, 34, 0.1);
+            z-index: 100;
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 87, 34, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 87, 34, 0);
+            }
+        }
+
+        .quick-start {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .quick-step {
+            flex: 1;
+            min-width: 150px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #eaeaea;
+        }
+
+        .quick-step i {
+            font-size: 2rem;
+            color: #2a5298;
+            margin-bottom: 10px;
+        }
+
+        .quick-step h4 {
+            margin-bottom: 8px;
+            color: #2a5298;
+        }
+
+        .quick-step p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .wire-endpoint {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #ff5722;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            cursor: move;
+            display: none;
+            pointer-events: auto;
+        }
+
+        .wire-endpoint.active {
+            display: block;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 10;
+        }
+
+        .zoom-btn {
+            width: 36px;
+            height: 36px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #2a5298;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .zoom-btn:hover {
+            background-color: #f0f4ff;
+            border-color: #4a6fdc;
+        }
+
+        .zoom-level {
+            position: absolute;
+            top: 15px;
+            right: 60px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            color: #666;
+        }
+
+        .drag-ghost {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.7;
+            width: 90px;
+            height: 70px;
+            border: 1px solid #4a6fdc;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f4ff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .wire-snap-indicator {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #4a6fdc;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            display: none;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-microchip"></i>
+            <h1>Circuit Diagram Designer</h1>
+        </div>
+        <div class="controls">
+            <button class="btn btn-help" id="helpBtn">
+                <i class="fas fa-question-circle"></i> Help
+            </button>
+            <button class="btn btn-keybinds" id="keybindsBtn">
+                <i class="fas fa-keyboard"></i> Keybinds
+            </button>
+            <button class="btn" id="wireModeBtn">
+                <i class="fas fa-bolt"></i> Wire Mode (W)
+            </button>
+            <button class="btn" id="textBtn">
+                <i class="fas fa-font"></i> Add Text (T)
+            </button>
+            <button class="btn btn-clear" id="clearBtn">
+                <i class="fas fa-trash"></i> Clear All
+            </button>
+            <button class="btn btn-export" id="exportBtn">
+                <i class="fas fa-download"></i> Export (E)
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="section-title">
+                    <span>Basic Components</span>
+                    <span class="hint">Drag to canvas</span>
+                </div>
+                <div class="components">
+                    <div class="component" data-type="resistor" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-wave-square"></i>
+                        </div>
+                        <div class="component-label">Resistor</div>
+                    </div>
+                    <div class="component" data-type="transistor-npn" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-arrow-down" style="font-size: 1.2rem;"></i>
+                        </div>
+                        <div class="component-label">NPN Transistor</div>
+                    </div>
+                    <div class="component" data-type="transistor-pnp" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-arrow-up" style="font-size: 1.2rem;"></i>
+                        </div>
+                        <div class="component-label">PNP Transistor</div>
+                    </div>
+                    <div class="component" data-type="capacitor" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-equals"></i>
+                        </div>
+                        <div class="component-label">Capacitor</div>
+                    </div>
+                    <div class="component" data-type="diode" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-long-arrow-alt-right"></i>
+                        </div>
+                        <div class="component-label">Diode</div>
+                    </div>
+                    <div class="component" data-type="switch" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-toggle-on"></i>
+                        </div>
+                        <div class="component-label">Switch</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="section-title">
+                    <span>Power & Ground</span>
+                    <span class="hint">Drag to canvas</span>
+                </div>
+                <div class="components">
+                    <div class="component" data-type="power" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-plus-circle"></i>
+                        </div>
+                        <div class="component-label">Power Source</div>
+                    </div>
+                    <div class="component" data-type="ground" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-minus-circle"></i>
+                        </div>
+                        <div class="component-label">Ground</div>
+                    </div>
+                    <div class="component" data-type="battery" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-battery-full"></i>
+                        </div>
+                        <div class="component-label">Battery</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="section-title">
+                    <span>Input & Output</span>
+                    <span class="hint">Drag to canvas</span>
+                </div>
+                <div class="components">
+                    <div class="component" data-type="led" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <div class="component-label">LED</div>
+                    </div>
+                    <div class="component" data-type="motor" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="component-label">Motor</div>
+                    </div>
+                    <div class="component" data-type="speaker" draggable="true">
+                        <div class="component-icon">
+                            <i class="fas fa-volume-up"></i>
+                        </div>
+                        <div class="component-label">Speaker</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gridCanvas"></canvas>
+            <div class="grid-info">Grid: 20px | Delete: Delete Selected | ESC: Deselect</div>
+            <div class="selection-hint">Drag components from sidebar → Click to select → Drag to move → Delete to remove
+            </div>
+            <div class="mode-indicator" id="modeIndicator">Wire Mode Active - Click two points to connect (snaps to
+                grid)</div>
+
+            <!-- Zoom controls -->
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoomInBtn">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="zoom-btn" id="zoomOutBtn">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="zoom-btn" id="resetZoomBtn">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </button>
+            </div>
+            <div class="zoom-level" id="zoomLevel">100%</div>
+
+            <!-- Wire endpoint handles (for dragging wire endpoints) -->
+            <div class="wire-endpoint" id="wireEndpoint1"></div>
+            <div class="wire-endpoint" id="wireEndpoint2"></div>
+
+            <!-- Wire snap indicator -->
+            <div class="wire-snap-indicator" id="wireSnapIndicator"></div>
+        </div>
+
+        <div class="properties-panel" id="propertiesPanel">
+            <div class="section-title">Properties</div>
+            <div class="property-group" id="componentProperties">
+                <label class="property-label">Component Label</label>
+                <input type="text" class="property-input" id="componentLabel" placeholder="e.g., R1, Q1, 2N2222">
+            </div>
+            <div class="property-group" id="valueProperties">
+                <label class="property-label">Value</label>
+                <input type="text" class="property-input" id="componentValue" placeholder="e.g., 10kΩ, 5V, 100μF">
+            </div>
+            <div class="property-group" id="wireProperties" style="display: none;">
+                <label class="property-label">Wire Color</label>
+                <input type="color" class="property-input" id="wireColor" value="#333333">
+            </div>
+            <div class="property-group" id="textProperties" style="display: none;">
+                <label class="property-label">Text Content</label>
+                <input type="text" class="property-input" id="textContent" placeholder="Enter text">
+                <label class="property-label" style="margin-top: 10px;">Text Size</label>
+                <input type="range" class="property-input" id="textSize" min="10" max="36" value="16">
+            </div>
+            <div class="property-group" id="rotationProperties">
+                <button class="rotate-btn" id="rotateBtn">
+                    <i class="fas fa-redo"></i> Rotate 90° (R)
+                </button>
+            </div>
+            <div class="property-group" id="colorProperties">
+                <label class="property-label">Color</label>
+                <input type="color" class="property-input" id="componentColor" value="#2a5298">
+            </div>
+            <div class="property-group">
+                <button class="btn btn-clear" id="deleteBtn" style="width: 100%;">
+                    <i class="fas fa-trash"></i> Delete Selected (Del)
+                </button>
+            </div>
+            <div class="property-group" id="flipProperties">
+                <button class="rotate-btn" id="flipBtn">
+                    <i class="fas fa-exchange-alt"></i> Flip Horizontal (F)
+                </button>      
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        Circuit exported successfully!
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal" id="exportModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Export Circuit Diagram</h3>
+            <p>Your circuit diagram has been generated. Right-click the image below and select "Save image as..." to
+                download it.</p>
+            <img class="modal-image" id="exportedImage" alt="Exported Circuit Diagram">
+            <div class="modal-actions">
+                <button class="btn" id="closeModalBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal" id="helpModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Circuit Designer Help</h3>
+
+            <div class="quick-start">
+                <div class="quick-step">
+                    <i class="fas fa-mouse-pointer"></i>
+                    <h4>1. Add Components</h4>
+                    <p>Drag components from the sidebar to the canvas</p>
+                </div>
+                <div class="quick-step">
+                    <i class="fas fa-bolt"></i>
+                    <h4>2. Connect Them</h4>
+                    <p>Use Wire Mode (W) to click and draw connections</p>
+                </div>
+                <div class="quick-step">
+                    <i class="fas fa-edit"></i>
+                    <h4>3. Customize</h4>
+                    <p>Click components to edit labels, values, colors</p>
+                </div>
+                <div class="quick-step">
+                    <i class="fas fa-download"></i>
+                    <h4>4. Export</h4>
+                    <p>Export (E) to save as a professional image</p>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <h3>How to Use</h3>
+                <p><strong>Adding Components:</strong> Drag any component from the left sidebar onto the canvas.</p>
+                <p><strong>Moving Components:</strong> Click and drag any component to reposition it.</p>
+                <p><strong>Rotating:</strong> Select a component and press R or click the rotate button.</p>
+                <p><strong>Adding Wires:</strong> Click the Wire Mode button (or press W), then click two points on the
+                    canvas to connect them. Wires automatically snap to the grid.</p>
+                <p><strong>Editing Wires:</strong> Select a wire to change its color, or drag its endpoints (the orange
+                    dots) to reposition them.</p>
+                <p><strong>Adding Text:</strong> Click the Text Mode button (or press T), then click on the canvas and
+                    enter your text.</p>
+                <p><strong>Editing Text:</strong> Click on text to select it, then edit in the properties panel.</p>
+                <p><strong>Deleting Items:</strong> Select any item and press Delete or click the delete button.</p>
+                <p><strong>Panning Canvas:</strong> Click and drag on empty canvas area to move around.</p>
+                <p><strong>Zooming:</strong> Use mouse wheel to zoom in/out (hold Ctrl for finer control), or use zoom
+                    buttons.</p>
+            </div>
+
+            <div class="help-section">
+                <h3>Tips for Professional Diagrams</h3>
+                <ul>
+                    <li>Use the grid to align components neatly</li>
+                    <li>Label all components (R1, C2, Q3, etc.)</li>
+                    <li>Add values (10kΩ, 5V, 100μF)</li>
+                    <li>Use text labels to explain circuit sections</li>
+                    <li>Use consistent colors for similar components</li>
+                    <li>Keep wires straight and avoid crossing when possible</li>
+                    <li>Export as PNG for highest quality</li>
+                </ul>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn" id="closeHelpBtn">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keybinds Modal -->
+    <div class="modal" id="keybindsModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Keyboard Shortcuts</h3>
+
+            <table class="keybind-table">
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th>Action</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="key">W</span></td>
+                        <td>Wire Mode</td>
+                        <td>Toggle wire drawing mode</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">T</span></td>
+                        <td>Text Mode</td>
+                        <td>Toggle text placement mode</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">E</span></td>
+                        <td>Export</td>
+                        <td>Export diagram as image</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">R</span></td>
+                        <td>Rotate</td>
+                        <td>Rotate selected component 90°</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">Delete</span> / <span class="key">Backspace</span></td>
+                        <td>Delete</td>
+                        <td>Delete selected item</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">ESC</span></td>
+                        <td>Deselect</td>
+                        <td>Clear current selection</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">Ctrl</span> + <span class="key">Z</span></td>
+                        <td>Undo</td>
+                        <td>Undo last action</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">Ctrl</span> + <span class="key">Y</span></td>
+                        <td>Redo</td>
+                        <td>Redo last undone action</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">Ctrl</span> + Mouse Wheel</td>
+                        <td>Zoom</td>
+                        <td>Zoom in/out on canvas</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">Space</span> + Drag</td>
+                        <td>Pan</td>
+                        <td>Pan around the canvas</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">G</span></td>
+                        <td>Toggle Grid</td>
+                        <td>Show/hide the grid</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">Ctrl</span> + <span class="key">S</span></td>
+                        <td>Save Project</td>
+                        <td>Save current circuit as file</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">Ctrl</span> + <span class="key">O</span></td>
+                        <td>Open Project</td>
+                        <td>Load circuit from file</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="help-section" style="margin-top: 20px;">
+                <h3>Mouse Controls</h3>
+                <ul>
+                    <li><strong>Left Click:</strong> Select items / Place wires in wire mode</li>
+                    <li><strong>Left Click + Drag:</strong> Move selected items / Pan canvas (when nothing selected)
+                    </li>
+                    <li><strong>Right Click:</strong> Context menu for components</li>
+                    <li><strong>Mouse Wheel:</strong> Scroll vertically / Zoom when Ctrl is held</li>
+                    <li><strong>Middle Click + Drag:</strong> Pan around the canvas</li>
+                    <li><strong>Drag from Sidebar:</strong> Drag components onto canvas</li>
+                </ul>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn" id="closeKeybindsBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drag ghost element -->
+    <div class="drag-ghost" id="dragGhost" style="display: none;">
+        <div class="component-icon">
+            <i class="fas fa-microchip"></i>
+        </div>
+        <div class="component-label">Component</div>
+    </div>
+
+    <script>
+        // Canvas and context
+        const canvas = document.getElementById('gridCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI elements
+        const wireModeBtn = document.getElementById('wireModeBtn');
+        const textBtn = document.getElementById('textBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const helpBtn = document.getElementById('helpBtn');
+        const keybindsBtn = document.getElementById('keybindsBtn');
+        const propertiesPanel = document.getElementById('propertiesPanel');
+        const componentLabel = document.getElementById('componentLabel');
+        const componentValue = document.getElementById('componentValue');
+        const componentColor = document.getElementById('componentColor');
+        const rotateBtn = document.getElementById('rotateBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const notification = document.getElementById('notification');
+        const modeIndicator = document.getElementById('modeIndicator');
+        const exportModal = document.getElementById('exportModal');
+        const exportedImage = document.getElementById('exportedImage');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const wireColorInput = document.getElementById('wireColor');
+        const textContentInput = document.getElementById('textContent');
+        const textSizeInput = document.getElementById('textSize');
+        const helpModal = document.getElementById('helpModal');
+        const keybindsModal = document.getElementById('keybindsModal');
+        const closeHelpBtn = document.getElementById('closeHelpBtn');
+        const closeKeybindsBtn = document.getElementById('closeKeybindsBtn');
+        const wireEndpoint1 = document.getElementById('wireEndpoint1');
+        const wireEndpoint2 = document.getElementById('wireEndpoint2');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const resetZoomBtn = document.getElementById('resetZoomBtn');
+        const zoomLevel = document.getElementById('zoomLevel');
+        const dragGhost = document.getElementById('dragGhost');
+        const wireSnapIndicator = document.getElementById('wireSnapIndicator');
+        const flipBtn = document.getElementById('flipBtn');
+
+        // Canvas setup
+        canvas.width = window.innerWidth - 470;
+        canvas.height = window.innerHeight - 60;
+
+        // Grid settings
+        const baseGridSize = 20; // Base grid size in pixels at 100% zoom
+        let offsetX = canvas.width / 2;
+        let offsetY = canvas.height / 2;
+        let scale = 1.0;
+        let isDragging = false;
+        let dragStartX, dragStartY;
+        let isDraggingWireEndpoint = false;
+        let draggingEndpointIndex = 0;
+        let isSpacePressed = false;
+        let isDraggingComponent = false;
+        let draggingComponent = null;
+        let isDraggingFromSidebar = false;
+        let dragComponentType = null;
+        let dragStartScreenX, dragStartScreenY;
+
+        // Application state
+        let components = [];
+        let wires = [];
+        let texts = [];
+        let selectedItem = null;
+        let selectedItemType = null; // 'component', 'wire', 'text'
+        let wireMode = false;
+        let textMode = false;
+        let wireStart = null;
+        let idCounter = 1;
+        let showGrid = true;
+        let undoStack = [];
+        let redoStack = [];
+
+        // Save state for undo/redo
+        function saveState() {
+            undoStack.push({
+                components: JSON.parse(JSON.stringify(components)),
+                wires: JSON.parse(JSON.stringify(wires)),
+                texts: JSON.parse(JSON.stringify(texts))
+            });
+
+            // Keep undo stack at reasonable size
+            if (undoStack.length > 50) {
+                undoStack.shift();
+            }
+
+            // Clear redo stack when new action is performed
+            redoStack = [];
+        }
+
+        // Undo function
+        function undo() {
+            if (undoStack.length === 0) return;
+
+            redoStack.push({
+                components: JSON.parse(JSON.stringify(components)),
+                wires: JSON.parse(JSON.stringify(wires)),
+                texts: JSON.parse(JSON.stringify(texts))
+            });
+
+            const prevState = undoStack.pop();
+            components = prevState.components;
+            wires = prevState.wires;
+            texts = prevState.texts;
+
+            selectedItem = null;
+            selectedItemType = null;
+            updatePropertiesPanel();
+            draw();
+            showNotification('Undo performed');
+        }
+
+        // Redo function
+        function redo() {
+            if (redoStack.length === 0) return;
+
+            undoStack.push({
+                components: JSON.parse(JSON.stringify(components)),
+                wires: JSON.parse(JSON.stringify(wires)),
+                texts: JSON.parse(JSON.stringify(texts))
+            });
+
+            const nextState = redoStack.pop();
+            components = nextState.components;
+            wires = nextState.wires;
+            texts = nextState.texts;
+
+            selectedItem = null;
+            selectedItemType = null;
+            updatePropertiesPanel();
+            draw();
+            showNotification('Redo performed');
+        }
+
+        // Draw grid
+        function drawGrid() {
+            if (!showGrid) return;
+
+            ctx.strokeStyle = '#eaeaea';
+            ctx.lineWidth = 1;
+
+            // Calculate grid spacing in screen pixels
+            const gridScreenSpacing = baseGridSize * scale;
+
+            // Don't draw grid if it's too small to see
+            if (gridScreenSpacing < 3) return;
+
+            // Calculate visible area in world coordinates
+            const visibleLeft = offsetX;
+            const visibleRight = offsetX + canvas.width / scale;
+            const visibleTop = offsetY;
+            const visibleBottom = offsetY + canvas.height / scale;
+
+            // Calculate the first grid line position
+            const startX = Math.floor(visibleLeft / baseGridSize) * baseGridSize;
+            const startY = Math.floor(visibleTop / baseGridSize) * baseGridSize;
+
+            // Draw vertical lines
+            for (let x = startX; x <= visibleRight; x += baseGridSize) {
+                const screenX = (x - offsetX) * scale;
+                ctx.beginPath();
+                ctx.moveTo(screenX, 0);
+                ctx.lineTo(screenX, canvas.height);
+                ctx.stroke();
+            }
+
+            // Draw horizontal lines
+            for (let y = startY; y <= visibleBottom; y += baseGridSize) {
+                const screenY = (y - offsetY) * scale;
+                ctx.beginPath();
+                ctx.moveTo(0, screenY);
+                ctx.lineTo(canvas.width, screenY);
+                ctx.stroke();
+            }
+
+            // Draw thicker lines every 5 grid cells if zoomed out enough
+            if (gridScreenSpacing >= 10) {
+                ctx.strokeStyle = '#d0d0d0';
+                ctx.lineWidth = 1.5;
+
+                // Draw major vertical lines every 5 cells
+                const majorStartX = Math.floor(visibleLeft / (baseGridSize * 5)) * (baseGridSize * 5);
+                for (let x = majorStartX; x <= visibleRight; x += baseGridSize * 5) {
+                    const screenX = (x - offsetX) * scale;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX, 0);
+                    ctx.lineTo(screenX, canvas.height);
+                    ctx.stroke();
+                }
+
+                // Draw major horizontal lines every 5 cells
+                const majorStartY = Math.floor(visibleTop / (baseGridSize * 5)) * (baseGridSize * 5);
+                for (let y = majorStartY; y <= visibleBottom; y += baseGridSize * 5) {
+                    const screenY = (y - offsetY) * scale;
+                    ctx.beginPath();
+                    ctx.moveTo(0, screenY);
+                    ctx.lineTo(canvas.width, screenY);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // Convert screen coordinates to world coordinates
+        function screenToWorld(x, y) {
+            return {
+                x: (x / scale) + offsetX,
+                y: (y / scale) + offsetY
+            };
+        }
+
+        // Convert world coordinates to screen coordinates
+        function worldToScreen(x, y) {
+            return {
+                x: (x - offsetX) * scale,
+                y: (y - offsetY) * scale
+            };
+        }
+
+        // Snap to grid in world coordinates
+        function snapToGrid(x, y) {
+            return {
+                x: Math.round(x / baseGridSize) * baseGridSize,
+                y: Math.round(y / baseGridSize) * baseGridSize
+            };
+        }
+
+        // Draw components
+        function drawComponents() {
+            components.forEach(component => {
+                const screenPos = worldToScreen(component.x, component.y);
+
+                ctx.save();
+                ctx.translate(screenPos.x, screenPos.y);
+                ctx.scale(scale, scale);
+
+                // Apply rotation first
+                ctx.rotate(component.rotation * Math.PI / 180);
+
+                // Apply flip around the center (0,0)
+                if (component.flipX) {
+                    ctx.scale(-1, 1);
+                }
+
+                // Set component color
+                const isSelected = selectedItemType === 'component' && selectedItem === component;
+                ctx.strokeStyle = isSelected ? '#ff5722' : component.color;
+                ctx.fillStyle = isSelected ? '#fff3e0' : '#ffffff';
+                ctx.lineWidth = isSelected ? 3 : 2;
+
+                // Draw component based on type
+                switch (component.type) {
+                    case 'resistor':
+                        drawResistor(component);
+                        break;
+                    case 'transistor-npn':
+                        drawTransistorNPN(component);
+                        break;
+                    case 'transistor-pnp':
+                        drawTransistorPNP(component);
+                        break;
+                    case 'capacitor':
+                        drawCapacitor(component);
+                        break;
+                    case 'diode':
+                        drawDiode(component);
+                        break;
+                    case 'switch':
+                        drawSwitch(component);
+                        break;
+                    case 'power':
+                        drawPower(component);
+                        break;
+                    case 'ground':
+                        drawGround(component);
+                        break;
+                    case 'battery':
+                        drawBattery(component);
+                        break;
+                    case 'led':
+                        drawLED(component);
+                        break;
+                    case 'motor':
+                        drawMotor(component);
+                        break;
+                    case 'speaker':
+                        drawSpeaker(component);
+                        break;
+                }
+
+                // Draw label - save/restore to avoid flipping text
+                ctx.save();
+                // If component is flipped, we need to reverse the flip for text
+                if (component.flipX) {
+                    ctx.scale(-1, 1);
+                }
+
+                ctx.fillStyle = component.color;
+                ctx.font = `${Math.max(10, 12 * scale)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText(component.label || '', 0, -component.height / 2 - 15 / scale);
+
+                // Draw value
+                if (component.value) {
+                    ctx.fillText(component.value, 0, component.height / 2 + 20 / scale);
+                }
+
+                ctx.restore();
+
+                ctx.restore();
+            });
+        }
+
+        // Classic resistor symbol (zigzag line)
+        function drawResistor(component) {
+            const w = component.width;
+            const h = component.height;
+
+            const leadEnd = w / 2;
+            const bodyStart = w / 3;
+            const bodyEnd = -w / 3;
+
+            // Draw leads
+            ctx.beginPath();
+            ctx.moveTo(-leadEnd, 0);
+            ctx.lineTo(bodyEnd, 0);
+            ctx.moveTo(bodyStart, 0);
+            ctx.lineTo(leadEnd, 0);
+            ctx.stroke();
+
+            // Draw IEC rectangular resistor body
+            const bodyWidth = bodyStart - bodyEnd;
+            const bodyHeight = h * 0.6; // IEC boxes are usually not full height
+
+            ctx.beginPath();
+            ctx.rect(
+                bodyEnd,
+                -bodyHeight / 2,
+                bodyWidth,
+                bodyHeight
+            );
+            ctx.stroke();
+        }
+
+        // Classic NPN transistor symbol
+        function drawTransistorNPN(component) {
+            const gridSize = baseGridSize; // Use the base grid size
+            const leadLength = gridSize * 2; // Make leads 2 grid units long (40px at 100% zoom)
+            const r = gridSize; // Make radius 1 grid unit (20px)
+
+            // Calculate positions that align to grid
+            const baseX = -leadLength; // Base lead to the left
+            const baseY = 0;
+
+            const collectorX = leadLength; // Collector to the top-right
+            const collectorY = -leadLength;
+
+            const emitterX = leadLength; // Emitter to the bottom-right
+            const emitterY = leadLength;
+
+            const innerCollectorX = r * 0.5; // Inner points of collector/emitter
+            const innerCollectorY = -r * 0.5;
+            const innerEmitterX = r * 0.5;
+            const innerEmitterY = r * 0.5;
+
+            // Draw the circle
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Draw base plate (vertical line inside circle)
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, -r * 0.6);
+            ctx.lineTo(-r * 0.45, r * 0.6);
+            ctx.stroke();
+
+            // Base lead (horizontal to the left)
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, 0);
+            ctx.lineTo(baseX, baseY);
+            ctx.stroke();
+
+            // Collector lead (to top-right)
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, -r * 0.3);
+            ctx.lineTo(innerCollectorX, innerCollectorY);
+            ctx.lineTo(collectorX, collectorY);
+            ctx.stroke();
+
+            // Emitter lead (to bottom-right)
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, r * 0.3);
+            ctx.lineTo(innerEmitterX, innerEmitterY);
+            ctx.lineTo(emitterX, emitterY);
+            ctx.stroke();
+
+            // Arrow on emitter (pointing outward for NPN)
+            const arrowLen = r * 0.5;
+            const arrowX = emitterX - arrowLen * 3;
+            const arrowY = emitterY - arrowLen * 3;
+
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(
+                arrowX - arrowLen * Math.cos(Math.PI / 4 - 0.35),
+                arrowY - arrowLen * Math.sin(Math.PI / 4 - 0.35) + 6
+            );
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(
+                arrowX - arrowLen * Math.cos(Math.PI / 4 + 0.35),
+                arrowY - arrowLen * Math.sin(Math.PI / 4 + 0.35) + 3
+            );
+            ctx.stroke();
+
+            ctx.save();
+            // If component is flipped, we need to reverse the flip for text
+            if (component.flipX) {
+                ctx.scale(-1, 1);
+            }
+
+            ctx.fillStyle = component.color;
+            ctx.font = `${9 * scale}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            // Adjust positions based on flip
+            if (component.flipX) {
+                // When flipped, swap collector and emitter labels and adjust positions
+                ctx.fillText("B", -baseX + 8, baseY);
+                ctx.fillText("C", -collectorX - 8, collectorY - 8);
+                ctx.fillText("E", -emitterX - 8, emitterY + 8);
+            } else {
+                // Original positions
+                ctx.fillText("B", baseX - 8, baseY);
+                ctx.fillText("C", collectorX + 8, collectorY - 8);
+                ctx.fillText("E", emitterX + 8, emitterY + 8);
+            }
+            ctx.restore();
+        }
+
+        // Classic PNP transistor symbol
+        function drawTransistorPNP(component) {
+            const gridSize = baseGridSize; // Use the base grid size
+            const leadLength = gridSize * 2; // Make leads 2 grid units long (40px at 100% zoom)
+            const r = gridSize; // Make radius 1 grid unit (20px)
+
+            // Calculate positions that align to grid
+            const baseX = -leadLength; // Base lead to the left
+            const baseY = 0;
+
+            const collectorX = leadLength; // Collector to the top-right
+            const collectorY = -leadLength;
+
+            const emitterX = leadLength; // Emitter to the bottom-right
+            const emitterY = leadLength;
+
+            const innerCollectorX = r * 0.5; // Inner points of collector/emitter
+            const innerCollectorY = -r * 0.5;
+            const innerEmitterX = r * 0.5;
+            const innerEmitterY = r * 0.5;
+
+            // Draw the circle
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Draw base plate (vertical line inside circle)
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, -r * 0.6);
+            ctx.lineTo(-r * 0.45, r * 0.6);
+            ctx.stroke();
+
+            // Base lead (horizontal to the left)
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, 0);
+            ctx.lineTo(baseX, baseY);
+            ctx.stroke();
+
+            // Collector lead (to top-right)
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, -r * 0.3);
+            ctx.lineTo(innerCollectorX, innerCollectorY);
+            ctx.lineTo(collectorX, collectorY);
+            ctx.stroke();
+
+            // Emitter lead (to bottom-right)
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, r * 0.3);
+            ctx.lineTo(innerEmitterX, innerEmitterY);
+            ctx.lineTo(emitterX, emitterY);
+            ctx.stroke();
+
+            // Arrow on emitter (pointing inward for PNP)
+            const arrowLen = r * 0.5;
+            const arrowX = emitterX - arrowLen * 4;
+            const arrowY = emitterY - arrowLen * 3.3;
+
+            ctx.beginPath();
+            ctx.moveTo(
+                arrowX + arrowLen * Math.cos(Math.PI / 4 - 0.35),
+                arrowY + arrowLen * Math.sin(Math.PI / 4 - 0.35) - 6
+            );
+            ctx.lineTo(arrowX, arrowY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(
+                arrowX + arrowLen * Math.cos(Math.PI / 4 + 0.35),
+                arrowY + arrowLen * Math.sin(Math.PI / 4 + 0.35) - 3
+            );
+            ctx.lineTo(arrowX, arrowY);
+            ctx.stroke();
+
+            ctx.save();
+            // If component is flipped, we need to reverse the flip for text
+            if (component.flipX) {
+                ctx.scale(-1, 1);
+            }
+
+            ctx.fillStyle = component.color;
+            ctx.font = `${9 * scale}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            // Adjust positions based on flip
+            if (component.flipX) {
+                // When flipped, swap collector and emitter labels and adjust positions
+                ctx.fillText("B", -baseX + 8, baseY);
+                ctx.fillText("C", -collectorX - 8, collectorY - 8);
+                ctx.fillText("E", -emitterX - 8, emitterY + 8);
+            } else {
+                // Original positions
+                ctx.fillText("B", baseX - 8, baseY);
+                ctx.fillText("C", collectorX + 8, collectorY - 8);
+                ctx.fillText("E", emitterX + 8, emitterY + 8);
+            }
+            ctx.restore();
+        }
+
+        // Classic capacitor symbol (two parallel lines)
+        function drawCapacitor(component) {
+            const w = component.width;
+            const h = component.height;
+
+            // Draw leads (aligned to grid)
+            ctx.beginPath();
+            ctx.moveTo(-w / 3, 0);
+            ctx.lineTo(-w / 10, 0);
+            ctx.moveTo(w / 10, 0);
+            ctx.lineTo(w / 3, 0);
+            ctx.stroke();
+
+            // Draw two parallel plates (aligned to grid)
+            const plateHeight = Math.round(h / 2 / baseGridSize) * baseGridSize; // Round to grid
+            ctx.beginPath();
+            // Left plate
+            ctx.moveTo(-w / 10, -plateHeight / 2);
+            ctx.lineTo(-w / 10, plateHeight / 2);
+            // Right plate
+            ctx.moveTo(w / 10, -plateHeight / 2);
+            ctx.lineTo(w / 10, plateHeight / 2);
+            ctx.stroke();
+        }
+
+        // Classic diode symbol
+        function drawDiode(component) {
+            const w = component.width;
+            const h = component.height;
+
+            // Draw leads (aligned to grid)
+            ctx.beginPath();
+            ctx.moveTo(-w / 1.5, 0);
+            ctx.lineTo(-w / 4, 0);
+            ctx.moveTo(w / 4, 0);
+            ctx.lineTo(w / 1.5, 0);
+            ctx.stroke();
+
+            // Draw triangle (pointing right for anode on left)
+            const triangleHeight = Math.round(h / 3 / baseGridSize) * baseGridSize; // Round to grid
+            ctx.beginPath();
+            ctx.moveTo(-w / 4, -triangleHeight);
+            ctx.lineTo(w / 3, 0);
+            ctx.lineTo(-w / 4, triangleHeight);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw cathode line (perpendicular bar)
+            ctx.beginPath();
+            ctx.moveTo(w / 3, -triangleHeight);
+            ctx.lineTo(w / 3, triangleHeight);
+            ctx.stroke();
+        }
+
+        // Classic switch symbol (break in line with hinged connection)
+        function drawSwitch(component) {
+            const w = component.width;
+            const h = component.height;
+
+            // Draw fixed contacts
+            ctx.beginPath();
+            ctx.moveTo(-w / 2, 0);
+            ctx.lineTo(-w / 6, 0);
+            ctx.moveTo(w / 6, 0);
+            ctx.lineTo(w / 2, 0);
+            ctx.stroke();
+
+            // Draw switch arm (hinged at left, connecting to right when closed)
+            ctx.beginPath();
+            // Hinge circle
+            ctx.arc(-w / 6, 0, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Switch arm (angled up when open)
+            ctx.beginPath();
+            ctx.moveTo(-w / 6, 0);
+            ctx.lineTo(w / 6, -h / 4);
+            ctx.stroke();
+
+            // Draw contact point on right
+            ctx.beginPath();
+            ctx.arc(w / 6, 0, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // Power source symbol (circle with + or VCC text)
+        function drawPower(component) {
+            const w = component.width;
+            const h = component.height;
+
+            // Draw circle
+            ctx.beginPath();
+            ctx.arc(0, 0, w / 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw plus sign
+            ctx.beginPath();
+            ctx.moveTo(0, -w / 6);
+            ctx.lineTo(0, w / 6);
+            ctx.moveTo(-w / 6, 0);
+            ctx.lineTo(w / 6, 0);
+            ctx.stroke();
+
+            // Draw connection point at bottom
+            ctx.beginPath();
+            ctx.moveTo(0, w / 3);
+            ctx.lineTo(0, h / 2);
+            ctx.stroke();
+        }
+
+        // Ground symbol (classic chassis ground symbol)
+        function drawGround(component) {
+            const w = component.width;
+            const h = component.height;
+
+            // Draw ground symbol (three horizontal lines of decreasing width)
+            ctx.beginPath();
+            // Vertical line
+            ctx.moveTo(0, -h / 2);
+            ctx.lineTo(0, -h / 4);
+            // Top line (longest)
+            ctx.moveTo(-w / 3, -h / 4);
+            ctx.lineTo(w / 3, -h / 4);
+            // Middle line
+            ctx.moveTo(-w / 4, 0);
+            ctx.lineTo(w / 4, 0);
+            // Bottom line (shortest)
+            ctx.moveTo(-w / 6, h / 4);
+            ctx.lineTo(w / 6, h / 4);
+            ctx.stroke();
+        }
+
+        // Classic battery symbol
+        function drawBattery(component) {
+            const w = component.width;
+            const h = component.height;
+
+            const plateSpacing = w * 0.08;      // distance between plates
+            const longPlate = h * 0.45;
+            const shortPlate = h * 0.25;
+
+            // Center the stack
+            const startX = -plateSpacing * 2.5;
+
+            // Draw 6 plates: long, short, long, short, long, short
+            for (let i = 0; i < 6; i++) {
+                const x = startX + i * plateSpacing;
+                const isLong = i % 2 === 0;
+                const plateHeight = isLong ? longPlate : shortPlate;
+
+                ctx.beginPath();
+                ctx.moveTo(x, -plateHeight / 2);
+                ctx.lineTo(x, plateHeight / 2);
+                ctx.stroke();
+            }
+
+            // Leads (left and right)
+            ctx.beginPath();
+            ctx.moveTo(startX - plateSpacing, 0);
+            ctx.lineTo(startX, 0);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(startX + plateSpacing * 5, 0);
+            ctx.lineTo(startX + plateSpacing * 6, 0);
+            ctx.stroke();
+
+            // + / − labels - SAVE/RESTORE to prevent flip
+            ctx.save();
+            if (component.flipX) {
+                ctx.scale(-1, 1);
+            }
+
+            ctx.fillStyle = component.color;
+            ctx.font = `${10 * scale}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            if (component.flipX) {
+                // When flipped, swap + and - labels
+                ctx.fillText("+", -startX - plateSpacing * 6.5, -shortPlate / 2 - 8);
+            } else {
+                // Original position
+                ctx.fillText("+", startX + plateSpacing * 6.5, -shortPlate / 2 - 8);
+            }
+            ctx.restore();
+        }
+
+
+        // LED symbol
+        function drawLED(component) {
+            const w = component.width;
+            const h = component.height;
+
+            const leadLen = w / 2;
+            const bodyLeft = -w / 6;
+            const bodyRight = w / 6;
+
+            // Leads
+            ctx.beginPath();
+            ctx.moveTo(-leadLen, 0);
+            ctx.lineTo(bodyLeft, 0);
+            ctx.moveTo(bodyRight, 0);
+            ctx.lineTo(leadLen, 0);
+            ctx.stroke();
+
+            // Diode triangle (anode left)
+            const triH = h * 0.5;
+
+            ctx.beginPath();
+            ctx.moveTo(bodyLeft, -triH / 2);
+            ctx.lineTo(bodyRight, 0);
+            ctx.lineTo(bodyLeft, triH / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Cathode bar
+            ctx.beginPath();
+            ctx.moveTo(bodyRight, -triH / 2);
+            ctx.lineTo(bodyRight, triH / 2);
+            ctx.stroke();
+
+            // IEC light emission arrows (2 only, parallel)
+            const arrowStartX = bodyRight + h * 0.1;
+            const arrowLen = h * 0.35;
+            const arrowOffsetY = h * 0.25;
+
+            ctx.beginPath();
+
+            // Upper arrow
+            ctx.moveTo(arrowStartX, -arrowOffsetY);
+            ctx.lineTo(arrowStartX + arrowLen, -arrowOffsetY - arrowLen);
+            ctx.moveTo(arrowStartX + arrowLen, -arrowOffsetY - arrowLen);
+            ctx.lineTo(arrowStartX + arrowLen - 4, -arrowOffsetY - arrowLen + 7);
+            ctx.moveTo(arrowStartX + arrowLen, -arrowOffsetY - arrowLen);
+            ctx.lineTo(arrowStartX + arrowLen - 8, -arrowOffsetY - arrowLen + 3);
+
+            // Lower arrow
+            ctx.moveTo(arrowStartX, arrowOffsetY - 10);
+            ctx.lineTo(arrowStartX + arrowLen, arrowOffsetY - arrowLen - 11);
+            ctx.moveTo(arrowStartX + arrowLen, arrowOffsetY - arrowLen - 11);
+            ctx.lineTo(arrowStartX + arrowLen - 4, arrowOffsetY - arrowLen - 10 + 7);
+            ctx.moveTo(arrowStartX + arrowLen, arrowOffsetY - arrowLen - 10);
+            ctx.lineTo(arrowStartX + arrowLen - 8, arrowOffsetY - arrowLen - 10 + 3);
+
+            ctx.stroke();
+        }
+
+        // Motor symbol (circle with M inside)
+        function drawMotor(component) {
+            const w = component.width;
+            const h = component.height;
+
+            // Draw circle for motor
+            ctx.beginPath();
+            ctx.arc(0, 0, w / 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw M inside
+            ctx.font = `bold ${Math.max(12, 16 * scale)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = component.color;
+            ctx.fillText('M', 0, 0);
+
+            // Draw connection points (top and bottom)
+            ctx.beginPath();
+            ctx.moveTo(0, -w / 3);
+            ctx.lineTo(0, -h / 2);
+            ctx.moveTo(0, w / 3);
+            ctx.lineTo(0, h / 2);
+            ctx.stroke();
+        }
+
+        // speaker symbol (IEC standard)
+        function drawSpeaker(component) {
+            const w = component.width;
+            const h = component.height;
+
+            const bodyWidth = w * 0.4;   // width of the rectangle body
+            const bodyHeight = h * 0.6;  // height of the rectangle body
+            const coneLength = w * 0.3;  // length of the output cone
+            const coneHeight = bodyHeight; // height of cone matches body
+
+            const centerX = 0;
+            const centerY = 0;
+
+            // lead up
+            ctx.beginPath();
+            ctx.moveTo(-w / 3.5, -5);
+            ctx.lineTo(centerX - bodyWidth / 5, -5);
+            ctx.stroke();
+
+            // load down
+            ctx.beginPath();
+            ctx.moveTo(-w / 3.5, 5);
+            ctx.lineTo(centerX - bodyWidth / 5, 5);
+            ctx.stroke();
+
+            // Speaker body (rectangle)
+            ctx.beginPath();
+            ctx.rect(centerX - bodyWidth / 2 + 10, centerY - bodyHeight / 2 + 10, bodyWidth - 10, bodyHeight - 20);
+            ctx.stroke();
+
+            // Output cone (trapezoid)
+            ctx.beginPath();
+            ctx.moveTo(centerX + bodyWidth / 2, centerY - bodyHeight / 4); // top-left of cone
+            ctx.lineTo(centerX + bodyWidth / 2 + coneLength, centerY - coneHeight / 2); // top-right
+            ctx.lineTo(centerX + bodyWidth / 2 + coneLength, centerY + coneHeight / 2); // bottom-right
+            ctx.lineTo(centerX + bodyWidth / 2, centerY + bodyHeight / 4); // bottom-left
+            ctx.closePath();
+            ctx.stroke();
+
+            const waveSpacing = coneLength * 0.5;
+
+        }
+
+        // Draw wires - Ensure wires snap to grid
+        function drawWires() {
+            wires.forEach(wire => {
+                const isSelected = selectedItemType === 'wire' && selectedItem === wire;
+                ctx.strokeStyle = isSelected ? '#ff5722' : wire.color;
+                ctx.lineWidth = (isSelected ? 4 : 2) * scale;
+                ctx.lineCap = 'round';
+
+                const fromScreen = worldToScreen(wire.from.x, wire.from.y);
+                const toScreen = worldToScreen(wire.to.x, wire.to.y);
+
+                ctx.beginPath();
+                ctx.moveTo(fromScreen.x, fromScreen.y);
+                ctx.lineTo(toScreen.x, toScreen.y);
+                ctx.stroke();
+            });
+
+            // Draw wire being created with snap indicator
+            if (wireStart) {
+                ctx.strokeStyle = '#ff5722';
+                ctx.lineWidth = 3 * scale;
+                ctx.setLineDash([5, 5]);
+
+                const fromScreen = worldToScreen(wireStart.x, wireStart.y);
+                const toScreen = worldToScreen(wireStart.currentX, wireStart.currentY);
+
+                ctx.beginPath();
+                ctx.moveTo(fromScreen.x, fromScreen.y);
+                ctx.lineTo(toScreen.x, toScreen.y);
+                ctx.stroke();
+
+                ctx.setLineDash([]);
+
+                // Show snap indicator at the end of the wire
+                const snappedPos = snapToGrid(wireStart.currentX, wireStart.currentY);
+                const snappedScreen = worldToScreen(snappedPos.x, snappedPos.y);
+                wireSnapIndicator.style.left = `${snappedScreen.x}px`;
+                wireSnapIndicator.style.top = `${snappedScreen.y}px`;
+                wireSnapIndicator.classList.add('active');
+            } else {
+                wireSnapIndicator.classList.remove('active');
+            }
+        }
+
+        // Update wire endpoint positions
+        function updateWireEndpoints() {
+            if (selectedItemType === 'wire' && selectedItem) {
+                const wire = selectedItem;
+                const fromScreen = worldToScreen(wire.from.x, wire.from.y);
+                const toScreen = worldToScreen(wire.to.x, wire.to.y);
+
+                wireEndpoint1.style.left = `${fromScreen.x}px`;
+                wireEndpoint1.style.top = `${fromScreen.y}px`;
+                wireEndpoint2.style.left = `${toScreen.x}px`;
+                wireEndpoint2.style.top = `${toScreen.y}px`;
+
+                wireEndpoint1.classList.add('active');
+                wireEndpoint2.classList.add('active');
+            } else {
+                wireEndpoint1.classList.remove('active');
+                wireEndpoint2.classList.remove('active');
+            }
+        }
+
+        // Draw text
+        function drawTexts() {
+            texts.forEach(textItem => {
+                const isSelected = selectedItemType === 'text' && selectedItem === textItem;
+                const screenPos = worldToScreen(textItem.x, textItem.y);
+
+                ctx.fillStyle = isSelected ? '#ff5722' : textItem.color;
+                ctx.font = `${textItem.fontSize * scale}px Arial`;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+
+                // Draw selection highlight
+                if (isSelected) {
+                    const textWidth = ctx.measureText(textItem.text).width;
+                    ctx.strokeStyle = '#ff5722';
+                    ctx.lineWidth = 1 * scale;
+                    ctx.setLineDash([2, 2]);
+                    ctx.strokeRect(
+                        screenPos.x - 2,
+                        screenPos.y - 2,
+                        textWidth + 4,
+                        textItem.fontSize * scale + 4
+                    );
+                    ctx.setLineDash([]);
+                }
+
+                ctx.fillText(textItem.text, screenPos.x, screenPos.y);
+            });
+        }
+
+        // Update zoom level display
+        function updateZoomDisplay() {
+            zoomLevel.textContent = `${Math.round(scale * 100)}%`;
+        }
+
+        // Main draw function
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawWires();
+            drawComponents();
+            drawTexts();
+            updateWireEndpoints();
+            updateZoomDisplay();
+        }
+
+        // Find component at position
+        function findComponentAt(x, y) {
+            const worldPos = screenToWorld(x, y);
+            x = worldPos.x;
+            y = worldPos.y;
+
+            for (let i = components.length - 1; i >= 0; i--) {
+                const component = components[i];
+
+                const dx = x - component.x;
+                const dy = y - component.y;
+                const cos = Math.cos(-component.rotation * Math.PI / 180);
+                const sin = Math.sin(-component.rotation * Math.PI / 180);
+                const localX = dx * cos - dy * sin;
+                const localY = dx * sin + dy * cos;
+
+                if (Math.abs(localX) <= component.width / 2 && Math.abs(localY) <= component.height / 2) {
+                    return component;
+                }
+            }
+            return null;
+        }
+
+        // Find wire at position
+        function findWireAt(x, y) {
+            const worldPos = screenToWorld(x, y);
+            x = worldPos.x;
+            y = worldPos.y;
+            const threshold = 8 / scale; // Adjust threshold for zoom
+
+            for (let i = wires.length - 1; i >= 0; i--) {
+                const wire = wires[i];
+
+                const A = wire.from;
+                const B = wire.to;
+                const P = { x: x, y: y };
+
+                const AB = { x: B.x - A.x, y: B.y - A.y };
+                const AP = { x: P.x - A.x, y: P.y - A.y };
+
+                const dot = AP.x * AB.x + AP.y * AB.y;
+                const ABLenSq = AB.x * AB.x + AB.y * AB.y;
+
+                let distance;
+
+                if (ABLenSq === 0) {
+                    distance = Math.sqrt(AP.x * AP.x + AP.y * AP.y);
+                } else {
+                    const t = Math.max(0, Math.min(1, dot / ABLenSq));
+
+                    const closest = {
+                        x: A.x + t * AB.x,
+                        y: A.y + t * AB.y
+                    };
+
+                    const dx = P.x - closest.x;
+                    const dy = P.y - closest.y;
+                    distance = Math.sqrt(dx * dx + dy * dy);
+                }
+
+                if (distance <= threshold) {
+                    return wire;
+                }
+            }
+            return null;
+        }
+
+        // Find text at position
+        function findTextAt(x, y) {
+            const worldPos = screenToWorld(x, y);
+            x = worldPos.x;
+            y = worldPos.y;
+
+            for (let i = texts.length - 1; i >= 0; i--) {
+                const textItem = texts[i];
+
+                ctx.save();
+                ctx.font = `${textItem.fontSize}px Arial`;
+                const textWidth = ctx.measureText(textItem.text).width;
+                ctx.restore();
+
+                if (x >= textItem.x && x <= textItem.x + textWidth &&
+                    y >= textItem.y && y <= textItem.y + textItem.fontSize) {
+                    return textItem;
+                }
+            }
+            return null;
+        }
+
+        // Check if clicking near a wire endpoint
+        function findWireEndpointAt(x, y) {
+            if (selectedItemType !== 'wire' || !selectedItem) return -1;
+
+            const wire = selectedItem;
+            const worldPos = screenToWorld(x, y);
+            x = worldPos.x;
+            y = worldPos.y;
+            const threshold = 15 / scale;
+
+            // Check distance to first endpoint
+            const dx1 = x - wire.from.x;
+            const dy1 = y - wire.from.y;
+            const dist1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+
+            if (dist1 <= threshold) return 1;
+
+            // Check distance to second endpoint
+            const dx2 = x - wire.to.x;
+            const dy2 = y - wire.to.y;
+            const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+            if (dist2 <= threshold) return 2;
+
+            return -1;
+        }
+
+        // Show notification
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // Update properties panel based on selection
+        function updatePropertiesPanel() {
+            if (!selectedItem) {
+                propertiesPanel.classList.remove('active');
+                return;
+            }
+
+            propertiesPanel.classList.add('active');
+
+            document.getElementById('componentProperties').style.display = 'none';
+            document.getElementById('valueProperties').style.display = 'none';
+            document.getElementById('wireProperties').style.display = 'none';
+            document.getElementById('textProperties').style.display = 'none';
+            document.getElementById('rotationProperties').style.display = 'none';
+            document.getElementById('flipProperties').style.display = 'none';  // Add this line
+            document.getElementById('colorProperties').style.display = 'none';
+
+            if (selectedItemType === 'component') {
+                document.getElementById('componentProperties').style.display = 'block';
+                document.getElementById('valueProperties').style.display = 'block';
+                document.getElementById('rotationProperties').style.display = 'block';
+                document.getElementById('flipProperties').style.display = 'block';  // Add this line
+                document.getElementById('colorProperties').style.display = 'block';
+
+                componentLabel.value = selectedItem.label || '';
+                componentValue.value = selectedItem.value || '';
+                componentColor.value = selectedItem.color;
+            } else if (selectedItemType === 'wire') {
+                document.getElementById('wireProperties').style.display = 'block';
+                wireColorInput.value = selectedItem.color;
+            } else if (selectedItemType === 'text') {
+                document.getElementById('textProperties').style.display = 'block';
+                document.getElementById('colorProperties').style.display = 'block';
+
+                textContentInput.value = selectedItem.text;
+                textSizeInput.value = selectedItem.fontSize;
+                componentColor.value = selectedItem.color;
+            }
+        }
+
+        // Delete selected item
+        function deleteSelectedItem() {
+            if (!selectedItem) return;
+
+            saveState();
+
+            if (selectedItemType === 'component') {
+                const index = components.indexOf(selectedItem);
+                if (index !== -1) {
+                    components.splice(index, 1);
+                    showNotification('Component deleted');
+                }
+            } else if (selectedItemType === 'wire') {
+                const index = wires.indexOf(selectedItem);
+                if (index !== -1) {
+                    wires.splice(index, 1);
+                    showNotification('Wire deleted');
+                }
+            } else if (selectedItemType === 'text') {
+                const index = texts.indexOf(selectedItem);
+                if (index !== -1) {
+                    texts.splice(index, 1);
+                    showNotification('Text deleted');
+                }
+            }
+
+            selectedItem = null;
+            selectedItemType = null;
+            updatePropertiesPanel();
+            draw();
+        }
+
+        // Setup drag and drop for sidebar components
+        function setupComponentDrag() {
+            const componentElements = document.querySelectorAll('.component[data-type]');
+
+            componentElements.forEach(componentEl => {
+                // Add draggable attribute
+                componentEl.setAttribute('draggable', 'true');
+
+                // Handle drag start
+                componentEl.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('componentType', componentEl.dataset.type);
+                    e.dataTransfer.effectAllowed = 'copy';
+
+                    // Visual feedback
+                    componentEl.classList.add('dragging');
+
+                    // Also set up our own custom drag visual
+                    dragComponentType = componentEl.dataset.type;
+                    dragStartScreenX = e.clientX;
+                    dragStartScreenY = e.clientY;
+
+                    // Show our custom drag ghost
+                    dragGhost.innerHTML = componentEl.innerHTML;
+                    dragGhost.style.display = 'block';
+                    dragGhost.style.left = `${e.clientX - 45}px`;
+                    dragGhost.style.top = `${e.clientY - 35}px`;
+
+                    isDraggingFromSidebar = true;
+                });
+
+                // Handle drag end
+                componentEl.addEventListener('dragend', () => {
+                    componentEl.classList.remove('dragging');
+                    dragGhost.style.display = 'none';
+                    isDraggingFromSidebar = false;
+                    dragComponentType = null;
+                });
+            });
+        }
+
+        // Event Listeners
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Check if we're dragging a wire endpoint
+            if (selectedItemType === 'wire' && selectedItem) {
+                const endpointIndex = findWireEndpointAt(x, y);
+                if (endpointIndex !== -1) {
+                    isDraggingWireEndpoint = true;
+                    draggingEndpointIndex = endpointIndex;
+                    return;
+                }
+            }
+
+            if (wireMode) {
+                const worldPos = screenToWorld(x, y);
+                const snapped = snapToGrid(worldPos.x, worldPos.y); // Snap to grid
+
+                if (!wireStart) {
+                    // First point - snap to grid
+                    wireStart = {
+                        x: snapped.x,
+                        y: snapped.y,
+                        currentX: snapped.x,
+                        currentY: snapped.y
+                    };
+                } else {
+                    // Second point - snap to grid
+                    saveState();
+                    wires.push({
+                        id: idCounter++,
+                        from: { x: wireStart.x, y: wireStart.y },
+                        to: { x: snapped.x, y: snapped.y },
+                        color: '#333'
+                    });
+                    wireStart = null;
+                    showNotification('Wire added (snapped to grid)');
+                }
+                draw();
+                return;
+            }
+
+            if (textMode) {
+                const worldPos = screenToWorld(x, y);
+                const snapped = snapToGrid(worldPos.x, worldPos.y);
+
+                const text = prompt('Enter text for the diagram:', 'Label');
+                if (text) {
+                    saveState();
+                    texts.push({
+                        id: idCounter++,
+                        text: text,
+                        x: snapped.x,
+                        y: snapped.y,
+                        fontSize: 16,
+                        color: '#333'
+                    });
+                    draw();
+                    showNotification('Text added');
+                }
+                textMode = false;
+                textBtn.classList.remove('text-mode');
+                modeIndicator.style.display = 'none';
+                canvas.style.cursor = 'default';
+                return;
+            }
+
+            // Check for clicks on existing items
+            const component = findComponentAt(x, y);
+            const wire = findWireAt(x, y);
+            const text = findTextAt(x, y);
+
+            // Select item (priority: component > wire > text)
+            if (component) {
+                selectedItem = component;
+                selectedItemType = 'component';
+                isDraggingComponent = true;
+                draggingComponent = component;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+            } else if (wire) {
+                selectedItem = wire;
+                selectedItemType = 'wire';
+            } else if (text) {
+                selectedItem = text;
+                selectedItemType = 'text';
+                isDragging = true;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+            } else {
+                selectedItem = null;
+                selectedItemType = null;
+                isDragging = true;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+            }
+
+            updatePropertiesPanel();
+            draw();
+        });
+
+        // Handle mouse move for dragging components and panning
+        document.addEventListener('mousemove', (e) => {
+            // Update drag ghost position if dragging from sidebar
+            if (isDraggingFromSidebar && dragComponentType) {
+                dragGhost.style.left = `${e.clientX - 45}px`;
+                dragGhost.style.top = `${e.clientY - 35}px`;
+            }
+
+            // Handle mouse move on canvas
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const worldPos = screenToWorld(x, y);
+
+            if (wireStart) {
+                // Snap wire preview to grid
+                const snapped = snapToGrid(worldPos.x, worldPos.y);
+                wireStart.currentX = snapped.x;
+                wireStart.currentY = snapped.y;
+                draw();
+            }
+
+            if (isDraggingWireEndpoint && selectedItemType === 'wire' && selectedItem) {
+                saveState();
+                const snapped = snapToGrid(worldPos.x, worldPos.y); // Snap to grid
+                if (draggingEndpointIndex === 1) {
+                    selectedItem.from.x = snapped.x;
+                    selectedItem.from.y = snapped.y;
+                } else {
+                    selectedItem.to.x = snapped.x;
+                    selectedItem.to.y = snapped.y;
+                }
+                draw();
+                return;
+            }
+
+            if (isDraggingComponent && draggingComponent) {
+                saveState();
+                const snapped = snapToGrid(worldPos.x, worldPos.y);
+                draggingComponent.x = snapped.x;
+                draggingComponent.y = snapped.y;
+                draw();
+                return;
+            }
+
+            if (isDragging && selectedItemType === 'text' && selectedItem) {
+                saveState();
+                const snapped = snapToGrid(worldPos.x, worldPos.y);
+                selectedItem.x = snapped.x;
+                selectedItem.y = snapped.y;
+                draw();
+                return;
+            }
+
+            if (isDragging && !selectedItem && !isSpacePressed) {
+                offsetX += (dragStartX - e.clientX) / scale;
+                offsetY += (dragStartY - e.clientY) / scale;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                draw();
+            }
+
+            if (isDragging && isSpacePressed) {
+                offsetX += (dragStartX - e.clientX) / scale;
+                offsetY += (dragStartY - e.clientY) / scale;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+            isDraggingWireEndpoint = false;
+            isDraggingComponent = false;
+            draggingComponent = null;
+            draggingEndpointIndex = 0;
+        });
+
+        // Handle dropping components from sidebar
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        });
+
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const worldPos = screenToWorld(x, y);
+            const snapped = snapToGrid(worldPos.x, worldPos.y); // Snap to grid
+
+            let type;
+
+            // Try to get data from dataTransfer first
+            if (e.dataTransfer.types.includes('componentType')) {
+                type = e.dataTransfer.getData('componentType');
+            } else if (dragComponentType) {
+                type = dragComponentType;
+            } else {
+                return;
+            }
+
+            if (!type) return;
+
+            saveState();
+
+            const newComponent = {
+                id: idCounter++,
+                type: type,
+                x: snapped.x,
+                y: snapped.y,
+                rotation: 0,
+                flipX: false,
+                label: '',
+                value: '',
+                color: '#2a5298',
+                width: 60,
+                height: 60
+            };
+
+            // Set component-specific properties
+            if (type === 'resistor') {
+                newComponent.width = 80;
+                newComponent.height = 40;
+                newComponent.label = 'R' + (components.filter(c => c.type === 'resistor').length + 1);
+                newComponent.value = '1kΩ';
+            } else if (type.includes('transistor')) {
+                newComponent.width = 80;
+                newComponent.height = 80;
+                newComponent.label = 'Q' + (components.filter(c => c.type.includes('transistor')).length + 1);
+                newComponent.value = '2N2222';
+            } else if (type === 'capacitor') {
+                newComponent.width = 60;
+                newComponent.height = 40;
+                newComponent.label = 'C' + (components.filter(c => c.type === 'capacitor').length + 1);
+                newComponent.value = '100μF';
+            } else if (type === 'diode') {
+                newComponent.width = 60;
+                newComponent.height = 40;
+                newComponent.label = 'D' + (components.filter(c => c.type === 'diode').length + 1);
+            } else if (type === 'led') {
+                newComponent.width = 60;
+                newComponent.height = 40;
+                newComponent.label = 'LED' + (components.filter(c => c.type === 'led').length + 1);
+                newComponent.color = '#ff9800';
+            } else if (type === 'power') {
+                newComponent.label = 'VCC';
+                newComponent.value = '5V';
+                newComponent.color = '#28a745';
+            } else if (type === 'ground') {
+                newComponent.label = 'GND';
+                newComponent.color = '#333';
+            } else if (type === 'battery') {
+                newComponent.width = 60;
+                newComponent.height = 80;
+                newComponent.label = 'BAT';
+                newComponent.value = '9V';
+            } else if (type === 'switch') {
+                newComponent.width = 80;
+                newComponent.height = 60;
+                newComponent.label = 'SW' + (components.filter(c => c.type === 'switch').length + 1);
+            } else if (type === 'motor') {
+                newComponent.width = 70;
+                newComponent.height = 70;
+                newComponent.label = 'M' + (components.filter(c => c.type === 'motor').length + 1);
+            } else if (type === 'speaker') {
+                newComponent.width = 70;
+                newComponent.height = 70;
+                newComponent.label = 'SPK' + (components.filter(c => c.type === 'speaker').length + 1);
+            }
+
+            components.push(newComponent);
+
+            // Select the new component
+            selectedItem = newComponent;
+            selectedItemType = 'component';
+            updatePropertiesPanel();
+
+            draw();
+            showNotification(`${type.replace('-', ' ')} added to diagram (snapped to grid)`);
+
+            // Hide drag ghost
+            dragGhost.style.display = 'none';
+            isDraggingFromSidebar = false;
+            dragComponentType = null;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+
+            if (e.ctrlKey) {
+                // Zoom with Ctrl + Wheel
+                const zoomIntensity = 0.1;
+                const mouseX = e.clientX - canvas.getBoundingClientRect().left;
+                const mouseY = e.clientY - canvas.getBoundingClientRect().top;
+                const worldPos = screenToWorld(mouseX, mouseY);
+
+                const zoomFactor = e.deltaY < 0 ? (1 + zoomIntensity) : (1 - zoomIntensity);
+                const newScale = scale * zoomFactor;
+
+                // Limit zoom range
+                if (newScale >= 0.1 && newScale <= 5) {
+                    scale = newScale;
+
+                    // Adjust offset to zoom toward mouse position
+                    offsetX = worldPos.x - mouseX / scale;
+                    offsetY = worldPos.y - mouseY / scale;
+
+                    draw();
+                }
+            } else {
+                // Pan with Wheel (no Ctrl)
+                offsetX -= e.deltaX / scale;
+                offsetY -= e.deltaY / scale;
+                draw();
+            }
+        });
+
+        // Zoom buttons
+        zoomInBtn.addEventListener('click', () => {
+            const zoomIntensity = 0.2;
+            const mouseX = canvas.width / 2;
+            const mouseY = canvas.height / 2;
+            const worldPos = screenToWorld(mouseX, mouseY);
+
+            const newScale = scale * (1 + zoomIntensity);
+
+            if (newScale <= 5) {
+                scale = newScale;
+                offsetX = worldPos.x - mouseX / scale;
+                offsetY = worldPos.y - mouseY / scale;
+                draw();
+                showNotification(`Zoom: ${Math.round(scale * 100)}%`);
+            }
+        });
+
+        zoomOutBtn.addEventListener('click', () => {
+            const zoomIntensity = 0.2;
+            const mouseX = canvas.width / 2;
+            const mouseY = canvas.height / 2;
+            const worldPos = screenToWorld(mouseX, mouseY);
+
+            const newScale = scale * (1 - zoomIntensity);
+
+            if (newScale >= 0.1) {
+                scale = newScale;
+                offsetX = worldPos.x - mouseX / scale;
+                offsetY = worldPos.y - mouseY / scale;
+                draw();
+                showNotification(`Zoom: ${Math.round(scale * 100)}%`);
+            }
+        });
+
+        resetZoomBtn.addEventListener('click', () => {
+            scale = 1.0;
+            // Reset to center
+            offsetX = canvas.width / 2;
+            offsetY = canvas.height / 2;
+            draw();
+            showNotification('Zoom reset to 100%');
+        });
+        
+        flipBtn.addEventListener('click', () => {
+            if (selectedItemType === 'component' && selectedItem) {
+                saveState();
+                selectedItem.flipX = !selectedItem.flipX;
+                draw();
+                showNotification(`Component ${selectedItem.flipX ? 'horizontally flipped' : 'restored to normal'}`);
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Don't trigger shortcuts if user is typing in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            // Delete key
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                deleteSelectedItem();
+                e.preventDefault();
+            }
+
+            // Escape key to clear selection
+            if (e.key === 'Escape') {
+                selectedItem = null;
+                selectedItemType = null;
+                updatePropertiesPanel();
+                draw();
+            }
+
+            // R key to rotate selected component
+            if (e.key === 'r' || e.key === 'R') {
+                if (selectedItemType === 'component') {
+                    saveState();
+                    selectedItem.rotation = (selectedItem.rotation + 90) % 360;
+                    draw();
+                }
+            }
+
+            // W key for wire mode
+            if (e.key === 'w' || e.key === 'W') {
+                wireModeBtn.click();
+                e.preventDefault();
+            }
+
+            // F key to flip selected component
+            if ((e.key === 'f' || e.key === 'F') && selectedItemType === 'component') {
+                e.preventDefault();
+                flipBtn.click();
+            }
+
+            // T key for text mode
+            if (e.key === 't' || e.key === 'T') {
+                textBtn.click();
+                e.preventDefault();
+            }
+
+            // E key for export
+            if (e.key === 'e' || e.key === 'E') {
+                exportBtn.click();
+                e.preventDefault();
+            }
+
+            // G key to toggle grid
+            if (e.key === 'g' || e.key === 'G') {
+                showGrid = !showGrid;
+                draw();
+                showNotification(showGrid ? 'Grid shown' : 'Grid hidden');
+            }
+
+            // Space key for panning
+            if (e.key === ' ') {
+                isSpacePressed = true;
+                canvas.style.cursor = 'grab';
+                e.preventDefault(); // Prevent space from scrolling page
+            }
+
+            // Undo/Redo
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'z' && !e.shiftKey) {
+                    undo();
+                    e.preventDefault();
+                }
+                if (e.key === 'z' && e.shiftKey) {
+                    redo();
+                    e.preventDefault();
+                }
+                if (e.key === 'y') {
+                    redo();
+                    e.preventDefault();
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === ' ') {
+                isSpacePressed = false;
+                canvas.style.cursor = 'default';
+            }
+        });
+
+        // Wire mode button
+        wireModeBtn.addEventListener('click', () => {
+            wireMode = !wireMode;
+            textMode = false;
+            selectedItem = null;
+            selectedItemType = null;
+            updatePropertiesPanel();
+
+            if (wireMode) {
+                wireModeBtn.classList.add('wire-mode');
+                textBtn.classList.remove('text-mode');
+                modeIndicator.textContent = 'Wire Mode Active - Click two points to connect (snaps to grid)';
+                modeIndicator.style.display = 'block';
+                showNotification('Wire mode activated - wires snap to grid (Press W to toggle)');
+                canvas.style.cursor = 'crosshair';
+            } else {
+                wireModeBtn.classList.remove('wire-mode');
+                modeIndicator.style.display = 'none';
+                wireStart = null;
+                canvas.style.cursor = 'default';
+            }
+            draw();
+        });
+
+        // Text mode button
+        textBtn.addEventListener('click', () => {
+            textMode = !textMode;
+            wireMode = false;
+            wireStart = null;
+            selectedItem = null;
+            selectedItemType = null;
+            updatePropertiesPanel();
+
+            if (textMode) {
+                textBtn.classList.add('text-mode');
+                wireModeBtn.classList.remove('wire-mode');
+                modeIndicator.textContent = 'Text Mode Active - Click on canvas to add text';
+                modeIndicator.style.display = 'block';
+                showNotification('Text mode activated (Press T to toggle)');
+                canvas.style.cursor = 'text';
+            } else {
+                textBtn.classList.remove('text-mode');
+                modeIndicator.style.display = 'none';
+                canvas.style.cursor = 'default';
+            }
+            draw();
+        });
+
+        // Clear button
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear the entire diagram?')) {
+                saveState();
+                components = [];
+                wires = [];
+                texts = [];
+                selectedItem = null;
+                selectedItemType = null;
+                updatePropertiesPanel();
+                draw();
+                showNotification('Diagram cleared');
+            }
+        });
+
+        // Export button
+        exportBtn.addEventListener('click', () => {
+            // Create a temporary canvas for export
+            const exportCanvas = document.createElement('canvas');
+            const exportCtx = exportCanvas.getContext('2d');
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+            // Find bounds of all components
+            components.forEach(comp => {
+                minX = Math.min(minX, comp.x - comp.width / 2);
+                minY = Math.min(minY, comp.y - comp.height / 2);
+                maxX = Math.max(maxX, comp.x + comp.width / 2);
+                maxY = Math.max(maxY, comp.y + comp.height / 2);
+            });
+
+            wires.forEach(wire => {
+                minX = Math.min(minX, wire.from.x, wire.to.x);
+                minY = Math.min(minY, wire.from.y, wire.to.y);
+                maxX = Math.max(maxX, wire.from.x, wire.to.x);
+                maxY = Math.max(maxY, wire.from.y, wire.to.y);
+            });
+
+            texts.forEach(text => {
+                const textWidth = text.fontSize * 0.6 * text.text.length; // Approximate width
+                minX = Math.min(minX, text.x);
+                minY = Math.min(minY, text.y);
+                maxX = Math.max(maxX, text.x + textWidth);
+                maxY = Math.max(maxY, text.y + text.fontSize);
+            });
+
+            const padding = 40;
+            minX -= padding;
+            minY -= padding;
+            maxX += padding;
+            maxY += padding;
+
+            // Set export canvas dimensions (high resolution)
+            const scaleFactor = 2; // 2x resolution for crisp image
+            exportCanvas.width = (maxX - minX) * scaleFactor;
+            exportCanvas.height = (maxY - minY) * scaleFactor;
+
+            // White background
+            exportCtx.fillStyle = 'white';
+            exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+            // Apply high resolution scaling
+            exportCtx.scale(scaleFactor, scaleFactor);
+
+            // Draw wires first (under components)
+            wires.forEach(wire => {
+                exportCtx.strokeStyle = wire.color;
+                exportCtx.lineWidth = 3;
+                exportCtx.lineCap = 'round';
+
+                exportCtx.beginPath();
+                exportCtx.moveTo(wire.from.x - minX, wire.from.y - minY);
+                exportCtx.lineTo(wire.to.x - minX, wire.to.y - minY);
+                exportCtx.stroke();
+            });
+
+            // Draw components using THE SAME drawing functions as the main canvas
+            components.forEach(component => {
+                exportCtx.save();
+                exportCtx.translate(component.x - minX, component.y - minY);
+                exportCtx.rotate(component.rotation * Math.PI / 180);
+
+                // Apply flip if needed
+                if (component.flipX) {
+                    exportCtx.scale(-1, 1);
+                }
+
+                // Set component styles
+                exportCtx.strokeStyle = component.color;
+                exportCtx.fillStyle = '#ffffff';
+                exportCtx.lineWidth = 2;
+
+                // Use the SAME drawing functions as the main canvas
+                // This ensures the export uses exactly what's shown on screen
+                switch (component.type) {
+                    case 'resistor':
+                        drawResistorForExport(exportCtx, component);
+                        break;
+                    case 'transistor-npn':
+                        drawTransistorNPNForExport(exportCtx, component);
+                        break;
+                    case 'transistor-pnp':
+                        drawTransistorPNPForExport(exportCtx, component);
+                        break;
+                    case 'capacitor':
+                        drawCapacitorForExport(exportCtx, component);
+                        break;
+                    case 'diode':
+                        drawDiodeForExport(exportCtx, component);
+                        break;
+                    case 'switch':
+                        drawSwitchForExport(exportCtx, component);
+                        break;
+                    case 'power':
+                        drawPowerForExport(exportCtx, component);
+                        break;
+                    case 'ground':
+                        drawGroundForExport(exportCtx, component);
+                        break;
+                    case 'battery':
+                        drawBatteryForExport(exportCtx, component);
+                        break;
+                    case 'led':
+                        drawLEDForExport(exportCtx, component);
+                        break;
+                    case 'motor':
+                        drawMotorForExport(exportCtx, component);
+                        break;
+                    case 'speaker':
+                        drawSpeakerForExport(exportCtx, component);
+                        break;
+                }
+
+                // Draw component label (if any) - wrap in save/restore to prevent flip
+                if (component.label) {
+                    exportCtx.fillStyle = component.color;
+                    exportCtx.font = 'bold 12px Arial';
+                    exportCtx.textAlign = 'center';
+                    exportCtx.textBaseline = 'middle';
+
+                    exportCtx.save();
+                    if (component.flipX) {
+                        exportCtx.scale(-1, 1);
+                    }
+                    exportCtx.fillText(component.label, 0, -component.height / 2 - 15);
+                    exportCtx.restore();
+                }
+
+                // Draw component value (if any) - wrap in save/restore to prevent flip
+                if (component.value) {
+                    exportCtx.fillStyle = component.color;
+                    exportCtx.font = '11px Arial';
+                    exportCtx.textAlign = 'center';
+                    exportCtx.textBaseline = 'middle';
+
+                    exportCtx.save();
+                    if (component.flipX) {
+                        exportCtx.scale(-1, 1);
+                    }
+                    exportCtx.fillText(component.value, 0, component.height / 2 + 20);
+                    exportCtx.restore();
+                }
+
+                exportCtx.restore();
+            });
+
+            // Draw texts on top
+            texts.forEach(textItem => {
+                exportCtx.fillStyle = textItem.color;
+                exportCtx.font = `${textItem.fontSize}px Arial`;
+                exportCtx.textAlign = 'left';
+                exportCtx.textBaseline = 'top';
+                exportCtx.fillText(textItem.text, textItem.x - minX, textItem.y - minY);
+            });
+
+            // Show the exported image in modal
+            exportedImage.src = exportCanvas.toDataURL('image/png');
+            exportModal.style.display = 'flex';
+            showNotification('Circuit exported with the same symbols as shown on screen');
+        });
+
+        // Add these drawing functions for export (they replicate what's on screen)
+        function drawResistorForExport(ctx, component) {
+            const w = component.width;
+            const h = component.height;
+
+            // IEC rectangular resistor body (same as main canvas)
+            const bodyWidth = w * 0.67;
+            const bodyHeight = h * 0.6;
+
+            ctx.beginPath();
+            ctx.rect(
+                -bodyWidth / 2,
+                -bodyHeight / 2,
+                bodyWidth,
+                bodyHeight
+            );
+            ctx.stroke();
+
+            // Leads
+            ctx.beginPath();
+            ctx.moveTo(-w / 2, 0);
+            ctx.lineTo(-bodyWidth / 2, 0);
+            ctx.moveTo(bodyWidth / 2, 0);
+            ctx.lineTo(w / 2, 0);
+            ctx.stroke();
+        }
+
+        function drawTransistorNPNForExport(ctx, component) {
+            const gridSize = 20; // Same as baseGridSize
+            const leadLength = gridSize * 2;
+            const r = gridSize;
+
+            // Same coordinates as main canvas
+            const baseX = -leadLength;
+            const baseY = 0;
+            const collectorX = leadLength;
+            const collectorY = -leadLength;
+            const emitterX = leadLength;
+            const emitterY = leadLength;
+
+            // Draw the circle
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Base plate
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, -r * 0.6);
+            ctx.lineTo(-r * 0.45, r * 0.6);
+            ctx.stroke();
+
+            // Base lead
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, 0);
+            ctx.lineTo(baseX, baseY);
+            ctx.stroke();
+
+            // Collector lead
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, -r * 0.3);
+            ctx.lineTo(r * 0.5, -r * 0.5);
+            ctx.lineTo(collectorX, collectorY);
+            ctx.stroke();
+
+            // Emitter lead
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, r * 0.3);
+            ctx.lineTo(r * 0.5, r * 0.5);
+            ctx.lineTo(emitterX, emitterY);
+            ctx.stroke();
+
+            // Arrow on emitter
+            const arrowLen = r * 0.5;
+            const arrowX = emitterX - arrowLen * 3;
+            const arrowY = emitterY - arrowLen * 3;
+
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - arrowLen * Math.cos(Math.PI / 4 - 0.35), arrowY - arrowLen * Math.sin(Math.PI / 4 - 0.35) + 6);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - arrowLen * Math.cos(Math.PI / 4 + 0.35), arrowY - arrowLen * Math.sin(Math.PI / 4 + 0.35) + 3);
+            ctx.stroke();
+
+            ctx.save();
+            // If component is flipped, we need to reverse the flip for text
+            if (component.flipX) {
+                ctx.scale(-1, 1);
+            }
+
+            ctx.fillStyle = component.color;
+            ctx.font = `${9 * scale}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            // Adjust positions based on flip
+            if (component.flipX) {
+                // When flipped, swap collector and emitter labels and adjust positions
+                ctx.fillText("B", -baseX + 8, baseY);
+                ctx.fillText("C", -collectorX - 8, collectorY - 8);
+                ctx.fillText("E", -emitterX - 8, emitterY + 8);
+            } else {
+                // Original positions
+                ctx.fillText("B", baseX - 8, baseY);
+                ctx.fillText("C", collectorX + 8, collectorY - 8);
+                ctx.fillText("E", emitterX + 8, emitterY + 8);
+            }
+            ctx.restore();
+        }
+
+        function drawTransistorPNPForExport(ctx, component) {
+            const gridSize = 20;
+            const leadLength = gridSize * 2;
+            const r = gridSize;
+
+            const baseX = -leadLength;
+            const baseY = 0;
+            const collectorX = leadLength;
+            const collectorY = -leadLength;
+            const emitterX = leadLength;
+            const emitterY = leadLength;
+
+            // Draw the circle
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Base plate
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, -r * 0.6);
+            ctx.lineTo(-r * 0.45, r * 0.6);
+            ctx.stroke();
+
+            // Base lead
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, 0);
+            ctx.lineTo(baseX, baseY);
+            ctx.stroke();
+
+            // Collector lead
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, -r * 0.3);
+            ctx.lineTo(r * 0.5, -r * 0.5);
+            ctx.lineTo(collectorX, collectorY);
+            ctx.stroke();
+
+            // Emitter lead
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.45, r * 0.3);
+            ctx.lineTo(r * 0.5, r * 0.5);
+            ctx.lineTo(emitterX, emitterY);
+            ctx.stroke();
+
+            // Arrow on emitter (pointing inward)
+            const arrowLen = r * 0.5;
+            const arrowX = emitterX - arrowLen * 4;
+            const arrowY = emitterY - arrowLen * 3.3;
+
+            ctx.beginPath();
+            ctx.moveTo(arrowX + arrowLen * Math.cos(Math.PI / 4 - 0.35), arrowY + arrowLen * Math.sin(Math.PI / 4 - 0.35) - 6);
+            ctx.lineTo(arrowX, arrowY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(arrowX + arrowLen * Math.cos(Math.PI / 4 + 0.35), arrowY + arrowLen * Math.sin(Math.PI / 4 + 0.35) - 3);
+            ctx.lineTo(arrowX, arrowY);
+            ctx.stroke();
+
+            ctx.save();
+            // If component is flipped, we need to reverse the flip for text
+            if (component.flipX) {
+                ctx.scale(-1, 1);
+            }
+
+            ctx.fillStyle = component.color;
+            ctx.font = `${9 * scale}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            // Adjust positions based on flip
+            if (component.flipX) {
+                // When flipped, swap collector and emitter labels and adjust positions
+                ctx.fillText("B", -baseX + 8, baseY);
+                ctx.fillText("C", -collectorX - 8, collectorY - 8);
+                ctx.fillText("E", -emitterX - 8, emitterY + 8);
+            } else {
+                // Original positions
+                ctx.fillText("B", baseX - 8, baseY);
+                ctx.fillText("C", collectorX + 8, collectorY - 8);
+                ctx.fillText("E", emitterX + 8, emitterY + 8);
+            }
+            ctx.restore();
+        }
+
+        function drawCapacitorForExport(ctx, component) {
+            const w = component.width;
+            const h = component.height;
+
+            const plateHeight = h * 0.6;
+            const plateSpacing = w * 0.33;
+
+            // Draw leads
+            ctx.beginPath();
+            ctx.moveTo(-w / 2, 0);
+            ctx.lineTo(-plateSpacing / 2, 0);
+            ctx.moveTo(plateSpacing / 2, 0);
+            ctx.lineTo(w / 2, 0);
+            ctx.stroke();
+
+            // Draw plates
+            ctx.beginPath();
+            ctx.moveTo(-plateSpacing / 2, -plateHeight / 2);
+            ctx.lineTo(-plateSpacing / 2, plateHeight / 2);
+            ctx.moveTo(plateSpacing / 2, -plateHeight / 2);
+            ctx.lineTo(plateSpacing / 2, plateHeight / 2);
+            ctx.stroke();
+        }
+
+        function drawDiodeForExport(ctx, component) {
+            const w = component.width;
+            const h = component.height;
+
+            const triangleHeight = h * 0.6;
+            const triangleWidth = w * 0.58;
+
+            // Draw leads
+            ctx.beginPath();
+            ctx.moveTo(-w / 2, 0);
+            ctx.lineTo(-triangleWidth / 2, 0);
+            ctx.moveTo(triangleWidth / 2, 0);
+            ctx.lineTo(w / 2, 0);
+            ctx.stroke();
+
+            // Draw triangle
+            ctx.beginPath();
+            ctx.moveTo(-triangleWidth / 2, -triangleHeight / 2);
+            ctx.lineTo(triangleWidth / 2, 0);
+            ctx.lineTo(-triangleWidth / 2, triangleHeight / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw cathode line
+            ctx.beginPath();
+            ctx.moveTo(triangleWidth / 2, -triangleHeight / 2);
+            ctx.lineTo(triangleWidth / 2, triangleHeight / 2);
+            ctx.stroke();
+        }
+
+        function drawSwitchForExport(ctx, component) {
+            const w = component.width;
+            const h = component.height;
+
+            // Fixed contacts
+            ctx.beginPath();
+            ctx.moveTo(-w / 2, 0);
+            ctx.lineTo(-w / 6, 0);
+            ctx.moveTo(w / 6, 0);
+            ctx.lineTo(w / 2, 0);
+            ctx.stroke();
+
+            // Hinge circle
+            ctx.beginPath();
+            ctx.arc(-w / 6, 0, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Switch arm
+            ctx.beginPath();
+            ctx.moveTo(-w / 6, 0);
+            ctx.lineTo(w / 6, -h / 4);
+            ctx.stroke();
+
+            // Contact point
+            ctx.beginPath();
+            ctx.arc(w / 6, 0, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawPowerForExport(ctx, component) {
+            const w = component.width;
+
+            // Draw circle
+            ctx.beginPath();
+            ctx.arc(0, 0, w / 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw plus sign
+            ctx.beginPath();
+            ctx.moveTo(0, -w / 6);
+            ctx.lineTo(0, w / 6);
+            ctx.moveTo(-w / 6, 0);
+            ctx.lineTo(w / 6, 0);
+            ctx.stroke();
+
+            // Connection point
+            ctx.beginPath();
+            ctx.moveTo(0, w / 3);
+            ctx.lineTo(0, component.height / 2);
+            ctx.stroke();
+        }
+
+        function drawGroundForExport(ctx, component) {
+            const w = component.width;
+            const h = component.height;
+
+            // Vertical line
+            ctx.beginPath();
+            ctx.moveTo(0, -h / 2);
+            ctx.lineTo(0, -h / 4);
+
+            // Three horizontal lines
+            ctx.moveTo(-w / 3, -h / 4);
+            ctx.lineTo(w / 3, -h / 4);
+            ctx.moveTo(-w / 4, 0);
+            ctx.lineTo(w / 4, 0);
+            ctx.moveTo(-w / 6, h / 4);
+            ctx.lineTo(w / 6, h / 4);
+
+            ctx.stroke();
+        }
+
+        function drawBatteryForExport(ctx, component) {
+            const w = component.width;
+            const h = component.height;
+
+            const plateSpacing = w * 0.08;
+            const longPlate = h * 0.45;
+            const shortPlate = h * 0.25;
+            const startX = -plateSpacing * 2.5;
+
+            // Draw 6 plates
+            for (let i = 0; i < 6; i++) {
+                const x = startX + i * plateSpacing;
+                const isLong = i % 2 === 0;
+                const plateHeight = isLong ? longPlate : shortPlate;
+
+                ctx.beginPath();
+                ctx.moveTo(x, -plateHeight / 2);
+                ctx.lineTo(x, plateHeight / 2);
+                ctx.stroke();
+            }
+
+            // Leads
+            ctx.beginPath();
+            ctx.moveTo(startX - plateSpacing, 0);
+            ctx.lineTo(startX, 0);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(startX + plateSpacing * 5, 0);
+            ctx.lineTo(startX + plateSpacing * 6, 0);
+            ctx.stroke();
+
+            ctx.save();
+            if (component.flipX) {
+                ctx.scale(-1, 1);
+            }
+
+            ctx.fillStyle = component.color;
+            ctx.font = `${10 * scale}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            if (component.flipX) {
+                ctx.fillText("+", -startX - plateSpacing * 6.5, -shortPlate / 2 - 8);
+            } else {
+                // Original position
+                ctx.fillText("+", startX + plateSpacing * 6.5, -shortPlate / 2 - 8);
+            }
+            ctx.restore();
+        }
+
+        function drawLEDForExport(ctx, component) {
+            const w = component.width;
+            const h = component.height;
+
+            const leadLen = w / 2;
+            const bodyLeft = -w / 6;
+            const bodyRight = w / 6;
+            const triH = h * 0.5;
+
+            // Leads
+            ctx.beginPath();
+            ctx.moveTo(-leadLen, 0);
+            ctx.lineTo(bodyLeft, 0);
+            ctx.moveTo(bodyRight, 0);
+            ctx.lineTo(leadLen, 0);
+            ctx.stroke();
+
+            // Diode triangle
+            ctx.beginPath();
+            ctx.moveTo(bodyLeft, -triH / 2);
+            ctx.lineTo(bodyRight, 0);
+            ctx.lineTo(bodyLeft, triH / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Cathode bar
+            ctx.beginPath();
+            ctx.moveTo(bodyRight, -triH / 2);
+            ctx.lineTo(bodyRight, triH / 2);
+            ctx.stroke();
+
+            // Light emission arrows
+            const arrowStartX = bodyRight + h * 0.1;
+            const arrowLen = h * 0.35;
+            const arrowOffsetY = h * 0.25;
+
+            ctx.beginPath();
+            // Upper arrow
+            ctx.moveTo(arrowStartX, -arrowOffsetY);
+            ctx.lineTo(arrowStartX + arrowLen, -arrowOffsetY - arrowLen);
+            ctx.moveTo(arrowStartX + arrowLen, -arrowOffsetY - arrowLen);
+            ctx.lineTo(arrowStartX + arrowLen - 4, -arrowOffsetY - arrowLen + 7);
+            ctx.moveTo(arrowStartX + arrowLen, -arrowOffsetY - arrowLen);
+            ctx.lineTo(arrowStartX + arrowLen - 8, -arrowOffsetY - arrowLen + 3);
+            // Lower arrow
+            ctx.moveTo(arrowStartX, arrowOffsetY - 10);
+            ctx.lineTo(arrowStartX + arrowLen, arrowOffsetY - arrowLen - 11);
+            ctx.moveTo(arrowStartX + arrowLen, arrowOffsetY - arrowLen - 11);
+            ctx.lineTo(arrowStartX + arrowLen - 4, arrowOffsetY - arrowLen - 10 + 7);
+            ctx.moveTo(arrowStartX + arrowLen, arrowOffsetY - arrowLen - 10);
+            ctx.lineTo(arrowStartX + arrowLen - 8, arrowOffsetY - arrowLen - 10 + 3);
+            ctx.stroke();
+        }
+
+        function drawMotorForExport(ctx, component) {
+            const w = component.width;
+
+            // Draw circle for motor
+            ctx.beginPath();
+            ctx.arc(0, 0, w / 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw M inside
+            ctx.fillStyle = component.color;
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('M', 0, 0);
+
+            // Connection points
+            ctx.beginPath();
+            ctx.moveTo(0, -w / 3);
+            ctx.lineTo(0, -component.height / 2);
+            ctx.moveTo(0, w / 3);
+            ctx.lineTo(0, component.height / 2);
+            ctx.stroke();
+        }
+
+        function drawSpeakerForExport(ctx, component) {
+            const w = component.width;
+            const h = component.height;
+
+            const bodyWidth = w * 0.4;
+            const bodyHeight = h * 0.6;
+            const coneLength = w * 0.3;
+            const coneHeight = bodyHeight;
+
+            // Leads
+            ctx.beginPath();
+            ctx.moveTo(-w / 3.5, -5);
+            ctx.lineTo(-bodyWidth / 5, -5);
+            ctx.moveTo(-w / 3.5, 5);
+            ctx.lineTo(-bodyWidth / 5, 5);
+            ctx.stroke();
+
+            // Speaker body
+            ctx.beginPath();
+            ctx.rect(-bodyWidth / 2 + 10, -bodyHeight / 2 + 10, bodyWidth - 10, bodyHeight - 20);
+            ctx.stroke();
+
+            // Output cone
+            ctx.beginPath();
+            ctx.moveTo(bodyWidth / 2, -bodyHeight / 4);
+            ctx.lineTo(bodyWidth / 2 + coneLength, -coneHeight / 2);
+            ctx.lineTo(bodyWidth / 2 + coneLength, coneHeight / 2);
+            ctx.lineTo(bodyWidth / 2, bodyHeight / 4);
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        // Help button
+        helpBtn.addEventListener('click', () => {
+            helpModal.style.display = 'flex';
+        });
+
+        // Keybinds button
+        keybindsBtn.addEventListener('click', () => {
+            keybindsModal.style.display = 'flex';
+        });
+
+        // Close modal buttons
+        closeModalBtn.addEventListener('click', () => {
+            exportModal.style.display = 'none';
+        });
+
+        closeHelpBtn.addEventListener('click', () => {
+            helpModal.style.display = 'none';
+        });
+
+        closeKeybindsBtn.addEventListener('click', () => {
+            keybindsModal.style.display = 'none';
+        });
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === exportModal) {
+                exportModal.style.display = 'none';
+            }
+            if (e.target === helpModal) {
+                helpModal.style.display = 'none';
+            }
+            if (e.target === keybindsModal) {
+                keybindsModal.style.display = 'none';
+            }
+        });
+
+        // Component property updates
+        componentLabel.addEventListener('change', () => {
+            if (selectedItemType === 'component') {
+                saveState();
+                selectedItem.label = componentLabel.value;
+                draw();
+            }
+        });
+
+        componentValue.addEventListener('change', () => {
+            if (selectedItemType === 'component') {
+                saveState();
+                selectedItem.value = componentValue.value;
+                draw();
+            }
+        });
+
+        componentColor.addEventListener('change', () => {
+            if (selectedItemType === 'component') {
+                saveState();
+                selectedItem.color = componentColor.value;
+                draw();
+            } else if (selectedItemType === 'text') {
+                saveState();
+                selectedItem.color = componentColor.value;
+                draw();
+            }
+        });
+
+        // Wire color update
+        wireColorInput.addEventListener('change', () => {
+            if (selectedItemType === 'wire') {
+                saveState();
+                selectedItem.color = wireColorInput.value;
+                draw();
+            }
+        });
+
+        // Text content update
+        textContentInput.addEventListener('change', () => {
+            if (selectedItemType === 'text') {
+                saveState();
+                selectedItem.text = textContentInput.value;
+                draw();
+            }
+        });
+
+        // Text size update
+        textSizeInput.addEventListener('input', () => {
+            if (selectedItemType === 'text') {
+                selectedItem.fontSize = parseInt(textSizeInput.value);
+                draw();
+            }
+        });
+
+        rotateBtn.addEventListener('click', () => {
+            if (selectedItemType === 'component') {
+                saveState();
+                selectedItem.rotation = (selectedItem.rotation + 90) % 360;
+                draw();
+            }
+        });
+
+        deleteBtn.addEventListener('click', deleteSelectedItem);
+
+        // Window resize handler
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth - 470;
+            canvas.height = window.innerHeight - 60;
+            draw();
+        });
+
+        // Initialize the app
+        setupComponentDrag();
+        saveState();
+        draw();
+        showNotification('Welcome! Classic schematic symbols are now used for all components.');
+    </script>
+</body>
+
+</html>
