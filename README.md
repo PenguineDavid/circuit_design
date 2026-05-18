@@ -294,10 +294,14 @@ Appears when items are selected with context-sensitive options.
 
 ---
 
-## Version Information
+## License
 
-- **Current Version**: 1.0  
-- **Last Updated**: 19/01/2026 
-- **Author**: David S  
-- **Copyright**: ©2026 David S all rights reserved
+circuit_design - A little circuit diagram designer.
+Copyright (C) 2026 PenguineDavid
 
+This program is free software: you can redistribute it and/or modify  
+it under the terms of the GNU General Public License as published by  
+the Free Software Foundation, either version 3 of the License, or  
+(at your option) any later version.
+
+See the [LICENSE](https://github.com/PenguineDavid/circuit_design?tab=GPL-3.0-1-ov-file) file for the full license text.
